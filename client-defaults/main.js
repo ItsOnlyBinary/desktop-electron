@@ -6,7 +6,7 @@ const Tray = electron.Tray;
 const Menu = electron.Menu;
 const dialog = electron.dialog;
 
-let preventQuit = true;
+let preventQuit = false;
 app.showExitPrompt = true;
 app.commandLine.appendSwitch('explicitly-allowed-ports', '6667,6697');
 
@@ -50,23 +50,28 @@ function createWindow () {
     // Open the DevTools.
     // mainWindow.webContents.openDevTools();
 
-    mainWindow.on('close', function (e) { //   <---- Catch close event
+    // Catch close event
+    mainWindow.on('close', function (e) {
         if (app.showExitPrompt && preventQuit === false) {
-            e.preventDefault(); // Prevents the window from closing
+            e.preventDefault();
             dialog.showMessageBox({
-                type: 'question',
-                buttons: ['Yes', 'No'],
                 title: 'Confirm',
                 message: 'You will be disconnected from all of your networks and channels, are you sure that you would like to exit KiwiIRC?',
-            }, function (response) {
-                if (response === 0) { // Runs the following if 'Yes' is clicked
+                buttons: ['Yes', 'No'],
+                defaultId: 0, // bound to buttons array
+                cancelId: 1, // bound to buttons array
+            }).then((result) => {
+                if (result.response === 0) {
                     preventQuit = false;
                     app.showExitPrompt = false;
                     mainWindow.close();
                     app.quit();
+                } else if (result.response === 1) {
+                    e.preventDefault();
                 }
             });
         }
+
         if (preventQuit === true) {
             mainWindow.hide();
             e.preventDefault();
@@ -75,14 +80,11 @@ function createWindow () {
 
     // Emitted when the window is closed.
     mainWindow.on('closed', function (e) {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
+        // Dereference the window object, usually you would store windows
+        // in an array if your app supports multi windows, this is the time
+        // when you should delete the corresponding element.
         mainWindow = null;
         app.quit();
-    /* e.returnValue = false;  // this will *prevent* the closing no matter what value is passed
-    mainWindow.hide();
-    e.preventDefault(); */
     });
 }
 
