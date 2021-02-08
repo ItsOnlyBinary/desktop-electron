@@ -6,7 +6,7 @@ const Tray = electron.Tray;
 const Menu = electron.Menu;
 const dialog = electron.dialog;
 
-let preventQuit = false;
+let preventQuit = true;
 app.showExitPrompt = true;
 app.commandLine.appendSwitch('explicitly-allowed-ports', '6667,6697');
 
@@ -18,9 +18,10 @@ const path = require('path');
 const url = require('url');
 const notify = require('node-notifier');
 
-// Keep a global reference of the window object, if you don't, the window will
+// Keep a global reference of the window & tray object, if you don't, the window/tray will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
+let tray;
 
 function createWindow () {
     // Create the browser window.
@@ -67,6 +68,7 @@ function createWindow () {
                     mainWindow.close();
                     app.quit();
                 } else if (result.response === 1) {
+                    preventQuit = true;
                     e.preventDefault();
                 }
             });
@@ -84,6 +86,7 @@ function createWindow () {
         // in an array if your app supports multi windows, this is the time
         // when you should delete the corresponding element.
         mainWindow = null;
+        tray = null;
         app.quit();
     });
 }
@@ -96,15 +99,15 @@ app.on('ready', function () {
     Menu.setApplicationMenu(null);
 
     // Add menu to tray
-    const tray = new Tray(path.join(__dirname, '/icons/kiwiirclogo_512x512.png'));
+    tray = new Tray(path.join(__dirname, '/icons/kiwiirclogo_512x512.png'));
     const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Quit',
-            click: function () { preventQuit = false; app.quit(); },
-        },
         {
             label: 'Show/Hide Window',
             click: function () { mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show(); },
+        },
+        {
+            label: 'Quit',
+            click: function () { preventQuit = false; app.quit(); },
         },
     ]);
     tray.on('click', () => {
@@ -118,6 +121,8 @@ app.on('ready', function () {
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function (e) {
+    mainWindow = null;
+    tray = null;
     app.quit();
 });
 
